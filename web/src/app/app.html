@@ -1,0 +1,197 @@
+<!-- reading progress -->
+<div class="progress" aria-hidden="true"><span [style.transform]="'scaleX(' + progress() + ')'"></span></div>
+
+<a class="skip" href="#thesis">Skip to dossier</a>
+
+<!-- top bar -->
+<header class="topbar">
+  <div class="topbar__in container">
+    <button class="brand" (click)="go('top')">
+      <span class="brand__mark" aria-hidden="true">◈</span>
+      <span class="brand__txt">AI&nbsp;RACE<span class="brand__sub">// OSINT</span></span>
+    </button>
+    <span class="topbar__active mono">{{ activeLabel() }}</span>
+    <button class="contents-btn mono" (click)="menuOpen.set(!menuOpen())" [attr.aria-expanded]="menuOpen()">
+      {{ menuOpen() ? 'Close ✕' : 'Contents ▾' }}
+    </button>
+  </div>
+</header>
+
+<!-- contents overlay -->
+@if (menuOpen()) {
+  <div class="menu" (click)="menuOpen.set(false)">
+    <nav class="menu__in container" (click)="$event.stopPropagation()">
+      <span class="menu__title mono">Dossier contents</span>
+      <div class="menu__grid">
+        @for (n of nav; track n.id; let i = $index) {
+          <button class="menu__link" [class.on]="active() === n.id" (click)="go(n.id)">
+            <span class="menu__num mono">{{ (i + 1).toString().padStart(2, '0') }}</span>
+            <span>{{ n.label }}</span>
+          </button>
+        }
+      </div>
+    </nav>
+  </div>
+}
+
+<!-- desktop side rail -->
+<aside class="rail" aria-hidden="true">
+  @for (n of nav; track n.id) {
+    <button class="rail__dot" [class.on]="active() === n.id" (click)="go(n.id)" [title]="n.label">
+      <span class="rail__lab mono">{{ n.label }}</span>
+    </button>
+  }
+</aside>
+
+<main id="top">
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="hero__bg" aria-hidden="true">
+      <svg viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice">
+        <path class="ln ln--nv" d="M-50,360 C300,360 420,150 1250,60" />
+        <path class="ln ln--hw" d="M-50,380 C320,380 520,330 1250,250" />
+      </svg>
+    </div>
+
+    <div class="container hero__in">
+      <p class="hero__stamp mono">
+        <span class="dot"></span> OPEN-SOURCE INTELLIGENCE · AI-RACE DOSSIER · EST. 2026-05-29
+      </p>
+      <h1 class="hero__title">The Cage<br />Is the Threat</h1>
+      <p class="hero__sig">
+        An interactive op-ed by <strong>Bo Shang</strong> on the
+        <strong>U.S.–China AI race</strong> — the technical &amp; economic case against caging China
+        out of Nvidia, TSMC, and EUV lithography.
+      </p>
+      <p class="hero__dek">
+        Weaponizing the compute supply chain to throttle China does not preserve an American lead —
+        it manufactures the self-reliant competitor it fears. With Jensen Huang, against Anthropic’s
+        2028 export-control thesis.
+      </p>
+
+      <div class="hero__by">
+        <span class="hero__author">An op-ed by <strong>Bo Shang</strong></span>
+        <a href="mailto:bo@trenchwork.org">bo&#64;trenchwork.org</a>
+        <a href="mailto:bo@shang.software">bo&#64;shang.software</a>
+      </div>
+
+      <div class="hero__chips">
+        <div class="chip">
+          <span class="chip__v is-nvidia"><app-count [to]="32" [suffix]="'×'" /></span>
+          <span class="chip__l mono">Nvidia per-chip lead</span>
+        </div>
+        <div class="chip">
+          <span class="chip__v is-huawei">300<small>/180</small></span>
+          <span class="chip__l mono">Huawei system PFLOPS, vs Nvidia</span>
+        </div>
+        <div class="chip">
+          <span class="chip__v is-gold"><app-count [to]="90" [suffix]="'%'" /></span>
+          <span class="chip__l mono">DeepSeek cost cut on Ascend</span>
+        </div>
+        <div class="chip">
+          <span class="chip__v is-cyan"><app-count [to]="0" /></span>
+          <span class="chip__l mono">EUV-class nodes in the PRC</span>
+        </div>
+      </div>
+
+      <button class="hero__cue" (click)="go('thesis')">
+        <span>Begin the dossier</span><span class="hero__cuearrow" aria-hidden="true">↓</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ NARRATIVE ============ -->
+  <app-section [data]="c.get('thesis')" />
+  <app-section [data]="c.get('jensen')" />
+  <app-section [data]="c.get('economics')" />
+
+  <app-section [data]="c.get('two-levels')">
+    <div class="viz-block"><app-two-level [perChip]="c.data.perChip" [system]="c.data.system" /></div>
+  </app-section>
+
+  <app-section [data]="c.get('silicon')">
+    <div class="viz-block"><app-per-chip-chart [data]="c.data.perChip" /></div>
+    <div class="viz-block"><app-yield-chart [data]="c.yieldData" /></div>
+    <div class="viz-block"><app-aggregate-chart [data]="c.data.aggregate" /></div>
+  </app-section>
+
+  <app-section [data]="c.get('system')">
+    <div class="viz-block"><app-system-chart [data]="c.data.system" /></div>
+  </app-section>
+
+  <app-section [data]="c.get('power')">
+    <div class="viz-block"><app-power-stat [data]="c.data.power" /></div>
+  </app-section>
+
+  <app-section [data]="c.get('software')" />
+
+  <app-section [data]="c.get('deepseek')">
+    <div class="viz-block"><app-pricing-chart [data]="c.data.pricing" /></div>
+  </app-section>
+
+  <app-section [data]="c.get('taiwan-litho')">
+    <div class="viz-block"><app-foundry-map [data]="c.data.foundryMap" /></div>
+  </app-section>
+
+  <app-section [data]="c.get('smic-gap')">
+    <div class="viz-block"><app-litho-ladder [data]="c.data.lithoLadder" /></div>
+  </app-section>
+
+  <app-section [data]="c.get('catchup')">
+    <div class="viz-block"><app-timeline [data]="c.data.timeline" /></div>
+  </app-section>
+
+  <section class="sec" id="fork">
+    <div class="container viz-block"><app-scenario-toggle [data]="c.scenarios" /></div>
+  </section>
+
+  <app-section [data]="c.get('rebuttal-intro')">
+    <div class="viz-block"><app-rebuttal-matrix [data]="c.rebuttal" /></div>
+  </app-section>
+
+  <app-section [data]="c.get('synthesis')" />
+  <app-section [data]="c.get('conclusion')" />
+</main>
+
+<!-- floating chapter dock -->
+<div class="dock" [class.dock--show]="progress() > 0.015">
+  <button
+    class="dock__nav"
+    (click)="prev()"
+    [disabled]="activeIndex() <= 0"
+    title="Previous chapter (←)"
+    aria-label="Previous chapter"
+  >‹</button>
+  <span class="dock__pos mono" [title]="activeLabel()">
+    {{ pad(activeIndex() + 1) }}<i>/</i>{{ pad(nav.length) }}
+  </span>
+  <button
+    class="dock__nav"
+    (click)="next()"
+    [disabled]="activeIndex() >= nav.length - 1"
+    title="Next chapter (→)"
+    aria-label="Next chapter"
+  >›</button>
+  <button class="dock__top" (click)="go('top')" title="Back to top" aria-label="Back to top">↑ top</button>
+</div>
+
+<!-- ============ FOOTER ============ -->
+<footer class="foot">
+  <div class="container foot__in">
+    <p class="foot__kick mono">Signed</p>
+    <p class="foot__sig">Bo Shang</p>
+    <div class="foot__mail">
+      <a href="mailto:bo@trenchwork.org">bo&#64;trenchwork.org</a>
+      <span class="sep">·</span>
+      <a href="mailto:bo@shang.software">bo&#64;shang.software</a>
+    </div>
+    <p class="foot__note">
+      An independent op-ed responding to Anthropic’s “2028: Two scenarios for global AI leadership”
+      (May 14, 2026). Technical figures — SMIC N+2, TSMC / EUV nodes, Ascend &amp; CloudMatrix specs,
+      CUDA vs CANN, DeepSeek-on-Ascend — drawn from public reporting (SemiAnalysis, CFR, Tom’s
+      Hardware, FT, and company roadmaps) and synthesized for argument. Prices and forward
+      projections are illustrative. The views are the author’s own.
+    </p>
+    <p class="foot__meta mono">AI&nbsp;RACE // OSINT · ai-race-osint.web.app · the cage is the threat</p>
+  </div>
+</footer>
