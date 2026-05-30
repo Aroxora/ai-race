@@ -3,10 +3,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
 import { ContentService } from './content.service';
+import { FaviconService } from './favicon.service';
 import { SectionComponent } from './components/section';
 import { TwoLevel } from './components/two-level';
 import { PerChipChart } from './components/per-chip-chart';
@@ -36,6 +38,28 @@ const FIREBASE_CONFIG = {
   appId: '1:206303017749:web:5ab2d1259f630a1bea471c',
   measurementId: 'G-XSCVQN9TWX',
 };
+
+const DEFAULT_TITLE = 'The Cage Is the Threat — Bo Shang on the AI Race';
+
+/** Per-chapter favicon accent + glyph — the tab icon reflects what you're reading. */
+const SECTION_FAVICON = new Map<string, { color: string; glyph: string }>([
+  ['thesis', { color: '#ff5d63', glyph: 'cage' }],
+  ['jensen', { color: '#76e07b', glyph: 'check' }],
+  ['economics', { color: '#ffd166', glyph: 'coin' }],
+  ['two-levels', { color: '#b491ff', glyph: 'split' }],
+  ['silicon', { color: '#76e07b', glyph: 'chip' }],
+  ['system', { color: '#ff5d63', glyph: 'grid' }],
+  ['power', { color: '#ff9f45', glyph: 'bolt' }],
+  ['software', { color: '#b491ff', glyph: 'code' }],
+  ['deepseek', { color: '#41e6ff', glyph: 'loop' }],
+  ['taiwan-litho', { color: '#41e6ff', glyph: 'lens' }],
+  ['smic-gap', { color: '#ff5d63', glyph: 'steps' }],
+  ['catchup', { color: '#ff9f45', glyph: 'trend' }],
+  ['fork', { color: '#ffd166', glyph: 'fork' }],
+  ['rebuttal-intro', { color: '#ff5d63', glyph: 'rebuttal' }],
+  ['synthesis', { color: '#b491ff', glyph: 'merge' }],
+  ['conclusion', { color: '#ffd166', glyph: 'flag' }],
+]);
 
 @Component({
   selector: 'app-root',
@@ -90,6 +114,16 @@ export class App {
     return i < 0 ? 0 : i;
   });
 
+  private readonly favicon = inject(FaviconService);
+  /** rounded reading-progress percent — throttles favicon redraws to ~100 updates */
+  private readonly faviconPct = computed(() => Math.round(this.progress() * 100));
+
+  // Firebase Analytics (lazy-loaded) + custom engagement events
+  private analytics: unknown = null;
+  private logEventFn: ((a: unknown, e: string, p?: Record<string, unknown>) => void) | null = null;
+  private pendingSection: string | null = null;
+  private readonly depthSeen = new Set<number>();
+
   protected activeLabel(): string {
     return this.nav.find((n) => n.id === this.active())?.label ?? 'Dossier';
   }
@@ -126,6 +160,34 @@ export class App {
         document.body.style.marginTop = `-${off[1]}px`;
       }
     }
+    // dynamic favicon + tab title reflecting reading progress and the active chapter
+    effect(() => {
+      const open = this.menuOpen();
+      const pct = this.faviconPct();
+      const id = this.active();
+      let glyph = 'brand';
+      let color = '#41e6ff';
+      if (open) {
+        glyph = 'menu';
+      } else if (pct > 1) {
+        const m = SECTION_FAVICON.get(id);
+        if (m) {
+          glyph = m.glyph;
+          color = m.color;
+        }
+      }
+      this.favicon.draw({ progress: pct / 100, color, glyph });
+      if (typeof document !== 'undefined') {
+        document.title =
+          !open && pct > 1 && SECTION_FAVICON.has(id)
+            ? `${this.pad(this.activeIndex() + 1)}/${this.pad(this.nav.length)} · ${this.activeLabel()} — The Cage Is the Threat`
+            : DEFAULT_TITLE;
+      }
+    });
+
+    // analytics: fire a section_view whenever the active chapter changes
+    effect(() => this.logSection(this.active()));
+
     afterNextRender(() => {
       this.wireScroll();
       this.wireSpy();
@@ -148,7 +210,15 @@ export class App {
       raf = 0;
       const h = document.documentElement;
       const max = h.scrollHeight - h.clientHeight;
-      this.progress.set(max > 0 ? Math.min(1, h.scrollTop / max) : 0);
+      const p = max > 0 ? Math.min(1, h.scrollTop / max) : 0;
+      this.progress.set(p);
+      const pc = Math.round(p * 100);
+      for (const m of [25, 50, 75, 100]) {
+        if (pc >= m && !this.depthSeen.has(m)) {
+          this.depthSeen.add(m);
+          this.logDepth(m);
+        }
+      }
     };
     const onScroll = (): void => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -186,11 +256,37 @@ export class App {
   private async initAnalytics(): Promise<void> {
     try {
       const { initializeApp } = await import('firebase/app');
-      const { getAnalytics, isSupported } = await import('firebase/analytics');
+      const { getAnalytics, isSupported, logEvent } = await import('firebase/analytics');
+      if (!(await isSupported())) return;
       const app = initializeApp(FIREBASE_CONFIG);
-      if (await isSupported()) getAnalytics(app);
+      this.analytics = getAnalytics(app);
+      this.logEventFn = logEvent as (a: unknown, e: string, p?: Record<string, unknown>) => void;
+      // flush the chapter that was active before analytics finished loading
+      if (this.pendingSection) {
+        const id = this.pendingSection;
+        this.pendingSection = null;
+        this.logSection(id);
+      }
     } catch {
       /* analytics is non-essential; never block the page */
+    }
+  }
+
+  private logSection(id: string): void {
+    if (this.logEventFn && this.analytics) {
+      this.logEventFn(this.analytics, 'section_view', {
+        section_id: id,
+        section_index: this.activeIndex() + 1,
+        section_label: this.activeLabel(),
+      });
+    } else {
+      this.pendingSection = id;
+    }
+  }
+
+  private logDepth(pct: number): void {
+    if (this.logEventFn && this.analytics) {
+      this.logEventFn(this.analytics, 'scroll_depth', { percent: pct });
     }
   }
 }
