@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { ContentService } from './content.service';
 import { FaviconService } from './favicon.service';
+import { LithoPrimer } from './components/litho-primer';
 import { SectionComponent } from './components/section';
 import { TwoLevel } from './components/two-level';
 import { PerChipChart } from './components/per-chip-chart';
@@ -43,6 +44,7 @@ const DEFAULT_TITLE = 'The Cage Is the Threat — Bo Shang on the AI Race';
 
 /** Per-chapter favicon accent + glyph — the tab icon reflects what you're reading. */
 const SECTION_FAVICON = new Map<string, { color: string; glyph: string }>([
+  ['primer', { color: '#41e6ff', glyph: 'lens' }],
   ['thesis', { color: '#ff5d63', glyph: 'cage' }],
   ['jensen', { color: '#76e07b', glyph: 'check' }],
   ['economics', { color: '#ffd166', glyph: 'coin' }],
@@ -65,6 +67,7 @@ const SECTION_FAVICON = new Map<string, { color: string; glyph: string }>([
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    LithoPrimer,
     SectionComponent,
     TwoLevel,
     PerChipChart,
@@ -87,6 +90,7 @@ export class App {
   protected readonly c = inject(ContentService);
 
   protected readonly nav: NavItem[] = [
+    { id: 'primer', label: 'Primer' },
     { id: 'thesis', label: 'Thesis' },
     { id: 'jensen', label: 'Jensen Huang' },
     { id: 'economics', label: 'Economics' },

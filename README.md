@@ -33,6 +33,7 @@ It then walks the SMIC-vs-TSMC technical gap, the Taiwan/Western-vs-PRC lithogra
 
 | Component | What it shows |
 |---|---|
+| **Lithography primer** | Interactive DUV (193 nm) vs EUV (13.5 nm) explainer — the Rayleigh limit, multi-patterning, why it's a wall, and how China could catch up |
 | Two-level toggle | Flip between "the chip" and "the system" — the winner inverts |
 | Per-chip chart | FP4 PFLOPS per accelerator; the ~32× gap |
 | System chart | 384-vs-72 chip dot-grid + aggregate PFLOPS |

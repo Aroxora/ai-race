@@ -94,11 +94,14 @@
         </div>
       </div>
 
-      <button class="hero__cue" (click)="go('thesis')">
+      <button class="hero__cue" (click)="go('primer')">
         <span>Begin the dossier</span><span class="hero__cuearrow" aria-hidden="true">↓</span>
       </button>
     </div>
   </header>
+
+  <!-- ============ PRIMER ============ -->
+  <app-litho-primer />
 
   <!-- ============ NARRATIVE ============ -->
   <app-section [data]="c.get('thesis')" />
